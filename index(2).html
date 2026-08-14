@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Jefe Premium Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="prodotti.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F4D03F;
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --medium-gray: #2a2a2a;
+            --light-gray: #888;
+            --white: #ffffff;
+            --danger: #ff4444;
+            --success: #00C851;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--black);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        input, textarea, select {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+            -webkit-touch-callout: default !important;
+        }
+
+        img { pointer-events: none; -webkit-user-drag: none; }
+
+        .welcome-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 50%, var(--black) 100%);
+            z-index: 10000; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 20px; transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .welcome-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .welcome-warning {
+            background: rgba(255, 68, 68, 0.08); border: 1px solid rgba(255, 68, 68, 0.4);
+            color: #ff6b6b; padding: 12px 20px; border-radius: 12px; font-size: 12px;
+            text-align: center; text-transform: uppercase; margin-bottom: 25px; font-weight: 800;
+            letter-spacing: 1.5px; line-height: 1.5; box-shadow: 0 0 15px rgba(255, 68, 68, 0.15); width: 100%; max-width: 400px;
+        }
+        .welcome-logo { width: 150px; height: 150px; margin-bottom: 20px; }
+        .welcome-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; border: 2px solid var(--gold); }
+        .welcome-title { font-size: 26px; font-weight: 700; color: var(--gold); text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .welcome-subtitle { font-size: 15px; color: var(--light-gray); text-align: center; margin-bottom: 30px; line-height: 1.5; }
+        .welcome-section { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .welcome-section-title { font-size: 14px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
+        
+        .language-selector, .currency-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .lang-btn, .currency-btn { background: var(--medium-gray); border: 2px solid transparent; color: var(--white); padding: 14px 8px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s ease; }
+        .lang-btn.active, .currency-btn.active { background: var(--gold); color: var(--black); border-color: var(--gold); }
+        
+        .enter-shop-btn { width: 100%; max-width: 400px; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%); color: var(--black); border: none; padding: 18px 40px; border-radius: 30px; font-size: 18px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; margin-top: 20px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); }
+
+        .app-container { display: none; min-height: 100vh; padding-bottom: 90px; }
+        .app-container.visible { display: block; animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .top-controls-bar { background: var(--dark-gray); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .currency-select { background: var(--medium-gray); border: 1px solid var(--gold); color: var(--white); padding: 12px 15px; border-radius: 8px; font-size: 14px; cursor: pointer; min-width: 100px; outline: none; }
+        .lang-selector { display: flex; gap: 5px; }
+        .lang-selector .lang-btn { padding: 12px; font-size: 12px; }
+
+        .brand-header { text-align: center; padding: 30px 20px; background: linear-gradient(180deg, var(--dark-gray) 0%, var(--black) 100%); }
+        .main-logo-container { width: 120px; height: 120px; margin: 0 auto 20px; }
+        .main-logo-container img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 3px solid var(--gold); }
+        .brand-header h1 { font-size: 32px; color: var(--gold); letter-spacing: 3px; margin-bottom: 10px; }
+        .brand-header p { color: var(--light-gray); font-size: 14px; }
+
+        .promo-banner { background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%); color: var(--black); padding: 12px 20px; text-align: center; font-weight: 600; font-size: 13px; }
+        
+        .gift-banner { background: var(--dark-gray); margin: 15px 20px; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--medium-gray); }
+        .gift-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+
+        /* NUOVO STILE PULSANTI CATEGORIE PIÙ PICCOLI E SENZA SCORRIMENTO */
+        .categories-wrapper { margin: 15px 0; }
+        .categories-scroller { padding: 0 15px; }
+        .categories-list {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            gap: 8px;
+        }
+        .category-btn {
+            background: var(--medium-gray);
+            border: 2px solid transparent;
+            color: var(--white);
+            padding: 8px 14px; 
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .category-btn.active { background: var(--gold); color: var(--black); border-color: var(--gold); }
+
+        .products-section { padding: 20px; }
+        .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .product-card { background: var(--dark-gray); border-radius: 15px; overflow: hidden; border: 1px solid var(--medium-gray); display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s ease; }
+        .product-card:hover { transform: translateY(-5px); }
+        .product-image { width: 100%; height: 150px; object-fit: cover; background: var(--medium-gray); }
+        .product-info { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .product-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--white); }
+        .product-desc { font-size: 12px; color: var(--light-gray); margin-bottom: 10px; min-height: 30px; }
+        .product-price { font-size: 18px; font-weight: 700; color: var(--gold); margin-bottom: 10px; }
+
+        .grid-qty-controls { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin-top: auto; }
+        .add-to-cart { flex: 1; background: var(--gold); border: none; color: var(--black); height: 40px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; }
+        .edibles-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: auto; }
+        .edible-btn { background: var(--gold); border: none; color: var(--black); height: 40px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-gray); border-top: 1px solid var(--medium-gray); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; padding-bottom: env(safe-area-inset-bottom, 10px); }
+        .nav-tab { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 15px; cursor: pointer; color: var(--light-gray); background: none; border: none; }
+        .nav-tab.active { color: var(--gold); }
+        .nav-tab .icon { font-size: 24px; }
+        .nav-tab span:last-child { font-size: 12px; font-weight: 500; }
+        .cart-icon-wrapper { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .badge-cart-count { position: absolute; top: -5px; right: -10px; background: var(--danger); color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+        body.keyboard-open .bottom-nav, body.keyboard-open .floating-contact { display: none !important; }
+        body.keyboard-open .checkout-sticky-bar { bottom: 0 !important; }
+
+        .app-view { display: none; padding: 0; padding-bottom: 40px; }
+        .view-content { padding: 20px; }
+        .app-view.active { display: block; }
+
+        .cart-item { background: var(--dark-gray); border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center; }
+        .cart-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .cart-item-details { flex: 1; }
+        .cart-item-name { font-weight: 600; margin-bottom: 5px; font-size: 15px; }
+        .cart-item-price { color: var(--gold); font-weight: 700; }
+        .quantity-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .qty-btn { background: var(--medium-gray); border: none; color: var(--white); width: 44px; height: 44px; border-radius: 8px; cursor: pointer; font-size: 20px; }
+        .cart-qty-val { min-width: 20px; text-align: center; font-weight: 600; font-size: 16px; }
+        .remove-item { background: var(--danger); border: none; color: white; padding: 0 15px; height: 44px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-left: auto; font-weight: bold; }
+        .empty-cart { text-align: center; padding: 60px 20px; color: var(--light-gray); }
+        .empty-cart-icon { font-size: 60px; margin-bottom: 20px; }
+
+        .checkout-form { background: var(--dark-gray); border-radius: 15px; padding: 20px; margin-top: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .form-group input, .form-group select { width: 100%; background: var(--medium-gray); border: 1px solid var(--medium-gray); color: var(--white); padding: 16px 15px; border-radius: 8px; font-size: 16px; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--gold); }
+
+        .verify-city-btn { background: var(--gold); color: var(--black); border: none; border-radius: 8px; padding: 0 15px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 12px; min-width: 90px; }
+
+        .pay-option { background: var(--medium-gray); border: 2px solid transparent; border-radius: 12px; padding: 15px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .pay-option.active { border-color: var(--gold); background: var(--dark-gray); }
+        .pay-option-content { display: flex; align-items: center; gap: 15px; }
+        .pay-logo { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; }
+        .badge-crypto { background: var(--gold); color: var(--black); }
+
+        @keyframes pulseSafe {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 81, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(0, 200, 81, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 81, 0); }
+        }
+        .badge-safe-pulse { background: var(--success); color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; animation: pulseSafe 2s infinite; text-align: center; white-space: nowrap; }
+
+        .crypto-suggestions { background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--gold); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; }
+        .crypto-suggestions h4 { color: var(--white); font-size: 14px; margin-bottom: 15px; font-weight: 700; text-transform: uppercase; }
+        .crypto-brands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .crypto-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; color: white; transition: transform 0.2s; pointer-events: auto; }
+        .crypto-btn:hover { transform: scale(1.03); }
+        .crypto-btn.wallet { background: #2AABEE; }
+        .crypto-btn.binance { background: #F3BA2F; color: #000; }
+        .crypto-btn.revolut { background: #ffffff; color: #000; }
+        .crypto-btn.moonpay { background: #7D00FF; }
+
+        .checkout-sticky-bar { position: sticky; bottom: 60px; background: var(--black); padding: 20px; border-top: 1px solid var(--medium-gray); z-index: 99; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--light-gray); }
+        .cart-summary-floating { width: 100%; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%); border: none; color: var(--black); padding: 18px; border-radius: 12px; font-size: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .cart-summary-floating:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .info-section { background: var(--dark-gray); border-radius: 15px; padding: 20px; margin-bottom: 15px; }
+        .info-section h3 { color: var(--gold); margin-bottom: 10px; font-size: 16px; }
+        .info-section p { color: var(--light-gray); line-height: 1.6; font-size: 14px; }
+
+        .tg-link-btn, .reviews-channel-btn { display: inline-block; padding: 15px 25px; border-radius: 25px; text-decoration: none; margin-top: 15px; font-weight: 600; text-align: center; width: 100%; }
+        .tg-link-btn { background: #0088cc; color: white; cursor: pointer; }
+        .reviews-channel-btn { background: #0088cc; color: white; margin-bottom: 20px; }
+
+        .reviews-header { text-align: center; margin-bottom: 30px; }
+        .reviews-header h2 { color: var(--gold); margin-bottom: 10px; }
+        .review-card { background: var(--dark-gray); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+        .review-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .reviewer-name { font-weight: 600; color: var(--gold); }
+        .review-rating { color: var(--gold); }
+        .review-text { color: var(--light-gray); font-size: 14px; line-height: 1.5; }
+
+        .floating-contact { position: fixed; bottom: 90px; right: 20px; background: #0088cc; color: white; border: none; padding: 15px 25px; border-radius: 30px; display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); z-index: 999; }
+
+        .toast-notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--success); color: white; padding: 15px 30px; border-radius: 30px; font-weight: 600; z-index: 10000; transition: transform 0.3s ease; text-align: center; width: max-content; max-width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .toast-notification.show { transform: translateX(-50%) translateY(0); }
+
+        .no-cash-warning { background: rgba(255, 68, 68, 0.1); border: 2px solid var(--danger); border-radius: 15px; padding: 20px; margin-bottom: 15px; }
+        .no-cash-warning h3 { color: var(--danger); font-size: 18px; margin-bottom: 15px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+        .no-cash-warning p { color: var(--light-gray); line-height: 1.7; font-size: 14px; margin-bottom: 15px; }
+        .no-cash-highlight { background: rgba(212, 175, 55, 0.15); border: 2px solid var(--gold); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .no-cash-highlight p { color: var(--gold); font-size: 16px; font-weight: 700; text-align: center; margin: 0; line-height: 1.5; }
+
+        .wholesale-notice { background: rgba(212, 175, 55, 0.1); border-left: 4px solid var(--gold); padding: 15px; margin-top: 15px; border-radius: 0 10px 10px 0; }
+        .wholesale-notice strong { color: var(--gold); display: block; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .wholesale-notice p { color: var(--light-gray); font-size: 13px; line-height: 1.6; margin: 0; }
+
+        .product-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 10001; align-items: center; justify-content: center; padding: 20px; }
+        .product-modal.visible { display: flex; }
+        .product-modal-content { background: var(--dark-gray); border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--medium-gray); animation: modalSlideIn 0.3s ease; }
+        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .product-modal-close { position: absolute; top: 15px; right: 20px; font-size: 35px; color: var(--light-gray); cursor: pointer; z-index: 10; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s ease; }
+        .product-modal-close:hover { background: rgba(255, 255, 255, 0.1); color: var(--white); }
+        .product-modal-body { display: flex; flex-direction: column; }
+        .product-modal-image-container { width: 100%; height: 300px; background: var(--black); display: flex; align-items: center; justify-content: center; border-radius: 20px 20px 0 0; overflow: hidden; }
+        .product-modal-image-container img { width: 100%; height: 100%; object-fit: cover; }
+        .product-modal-info { padding: 25px; }
+        .product-modal-title { font-size: 24px; font-weight: 700; color: var(--gold); margin-bottom: 10px; line-height: 1.2; }
+        .product-modal-price { font-size: 28px; font-weight: 700; color: var(--white); margin-bottom: 15px; }
+        .product-modal-description { font-size: 15px; color: var(--light-gray); line-height: 1.6; margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .product-modal-category { display: inline-block; background: var(--gold); color: var(--black); padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 20px; }
+        .product-modal-controls { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+        .product-modal-qty-controls { display: flex; align-items: center; gap: 15px; background: var(--medium-gray); padding: 5px; border-radius: 12px; }
+        .product-modal-qty-btn { background: var(--dark-gray); border: none; color: var(--white); width: 45px; height: 45px; border-radius: 10px; cursor: pointer; font-size: 22px; font-weight: bold; transition: all 0.2s ease; }
+        .product-modal-qty-btn:hover { background: var(--gold); color: var(--black); }
+        .product-modal-qty-value { font-size: 20px; font-weight: 700; min-width: 30px; text-align: center; }
+        .product-modal-add-btn { flex: 1; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%); border: none; color: var(--black); height: 55px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; transition: transform 0.2s ease; }
+        .product-modal-add-btn:hover { transform: scale(1.02); }
+        .product-modal-edibles { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .product-modal-edible-btn { background: var(--gold); border: none; color: var(--black); height: 55px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; text-transform: uppercase; }
+
+        .contact-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10005; align-items: center; justify-content: center; padding: 20px; }
+        .contact-modal-overlay.visible { display: flex; animation: fadeIn 0.3s ease; }
+        .contact-modal-content { background: var(--dark-gray); border-radius: 20px; width: 100%; max-width: 400px; text-align: center; padding: 30px; border: 2px solid var(--danger); box-shadow: 0 10px 30px rgba(255, 68, 68, 0.2); }
+        .contact-promise-btn { width: 100%; background: var(--success); color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0, 200, 81, 0.3); margin-top: 10px; transition: transform 0.2s; }
+        .contact-promise-btn:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body>
+
+    <!-- WELCOME SCREEN -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-warning">NO CASH ACCEPTED, SAFETY FOR OUR RIDERS FIRST.</div>
+        
+        <div class="welcome-logo">
+            <img src="https://files.catbox.moe/w9w6hz.jpg" alt="El Jefe Logo" loading="lazy">
+        </div>
+        <h1 class="welcome-title" id="welcomeTitle">Welcome to El Jefe</h1>
+        <p class="welcome-subtitle" id="welcomeSubtitle">Please select your Language and Currency</p>
+        
+        <div class="welcome-section">
+            <div class="welcome-section-title" id="langTitle">Language</div>
+            <div class="language-selector" role="group" aria-label="Language selection">
+                <button class="lang-btn active" data-lang="EN" onclick="selectLanguage('EN')">EN</button>
+                <button class="lang-btn" data-lang="IT" onclick="selectLanguage('IT')">IT</button>
+                <button class="lang-btn" data-lang="FR" onclick="selectLanguage('FR')">FR</button>
+                <button class="lang-btn" data-lang="DE" onclick="selectLanguage('DE')">DE</button>
+                <button class="lang-btn" data-lang="RU" onclick="selectLanguage('RU')">RU</button>
+            </div>
+        </div>
+
+        <div class="welcome-section">
+            <div class="welcome-section-title" id="currTitle">Currency</div>
+            <div class="currency-selector" role="group" aria-label="Currency selection">
+                <button class="currency-btn active" data-currency="EUR" onclick="selectCurrency('EUR')">EUR</button>
+                <button class="currency-btn" data-currency="USD" onclick="selectCurrency('USD')">USD</button>
+                <button class="currency-btn" data-currency="GBP" onclick="selectCurrency('GBP')">GBP</button>
+                <button class="currency-btn" data-currency="JPY" onclick="selectCurrency('JPY')">JPY</button>
+                <button class="currency-btn" data-currency="RUB" onclick="selectCurrency('RUB')">RUB</button>
+            </div>
+        </div>
+
+        <button class="enter-shop-btn" id="enterBtn" onclick="enterShop()">ENTER SHOP</button>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="app-container" id="appContainer">
+        
+        <div class="top-controls-bar">
+            <select class="currency-select" id="headerCurrency" onchange="changeCurrency(this.value)">
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="RUB">RUB (₽)</option>
+            </select>
+            
+            <div class="lang-selector" role="group">
+                <button class="lang-btn active" data-lang="EN" onclick="changeLang('EN')">EN</button>
+                <button class="lang-btn" data-lang="IT" onclick="changeLang('IT')">IT</button>
+                <button class="lang-btn" data-lang="FR" onclick="changeLang('FR')">FR</button>
+                <button class="lang-btn" data-lang="DE" onclick="changeLang('DE')">DE</button>
+                <button class="lang-btn" data-lang="RU" onclick="changeLang('RU')">RU</button>
+            </div>
+        </div>
+
+        <div class="brand-header">
+            <div class="main-logo-container">
+                <img src="https://files.catbox.moe/w9w6hz.jpg" alt="El Jefe Logo" loading="lazy">
+            </div>
+            <h1>EL JEFE</h1>
+            <p id="headerSub">Premium Quality Direct • Delivery in 1 hour!</p>
+        </div>
+
+        <div class="promo-banner" id="promoBanner">
+            🔥 FREE Shipping >50€ | 💸 -10% >90€ | -20% >150€ | -30% >300€
+        </div>
+
+        <div class="gift-banner">
+            <img class="gift-thumb" src="https://files.catbox.moe/9tu5hx.jpg" alt="Gifts" loading="lazy">
+            <div>
+                <strong style="color: var(--gold); display: block; margin-bottom: 5px;">🎁 FREE GIFTS</strong>
+                <span style="font-size: 13px; color: var(--light-gray);" id="giftDesc">Clipper lighter, rolling papers and filters included free in every order from 50€!</span>
+            </div>
+        </div>
+
+        <!-- MENU VIEW -->
+        <div id="view-menu" class="app-view active">
+            <div class="categories-wrapper">
+                <div class="categories-scroller">
+                    <div class="categories-list" id="catList">
+                        <button class="category-btn active" onclick="filterProducts('all', this)">All</button>
+                        <button class="category-btn" onclick="filterProducts('special', this)">💎 Special</button>
+                        <button class="category-btn" onclick="filterProducts('weed', this)">🌿 Weed</button>
+                        <button class="category-btn" onclick="filterProducts('vape', this)">💨 Vapes</button>
+                        <button class="category-btn" onclick="filterProducts('hash', this)">🟫 Hash</button>
+                        <button class="category-btn" onclick="filterProducts('mushrooms', this)">🍄 Mushrooms</button>
+                        <button class="category-btn" onclick="filterProducts('prerolls', this)">🚬 Prerolls</button>
+                        <button class="category-btn" onclick="filterProducts('edibles', this)">🍬 Edibles</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="products-section">
+                <div class="products-grid" id="productsGrid"></div>
+            </div>
+        </div>
+
+        <!-- CART VIEW -->
+        <div id="view-cart" class="app-view">
+            <div class="view-content">
+                <h2 style="margin-bottom: 20px; font-size: 24px;" id="cartTitle">🛒 Your Cart</h2>
+                
+                <div id="cartItemsContainer">
+                    <div class="empty-cart">
+                        <div class="empty-cart-icon">🛒</div>
+                        <p id="emptyCartText">Your cart is empty</p>
+                    </div>
+                </div>
+                
+                <div class="checkout-form" id="checkoutForm" style="display: none;">
+                    <h3 style="margin-bottom: 20px; color: var(--gold);" id="deliveryDetails">📍 Delivery Details</h3>
+                    
+                    <div class="form-group">
+                        <label id="lblTelegram">TELEGRAM USERNAME / PHONE</label>
+                        <input type="text" id="inputTelegram" placeholder="@username or +123456789">
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lblCity">CITY</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="inputCity" placeholder="Enter your city" oninput="resetCityCheck()">
+                            <button type="button" id="btnVerifyCity" class="verify-city-btn" onclick="verifyCity()">Verify</button>
+                        </div>
+                        <div id="cityCheckResult" style="font-size: 13px; margin-top: 8px; font-weight: bold; display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label id="lblAddress">ADDRESS</label>
+                        <input type="text" id="inputAddress" placeholder="Enter your address">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label id="lblZip">ZIP CODE</label>
+                        <input type="text" id="inputZip" placeholder="Enter ZIP code">
+                    </div>
+
+                    <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--gold);" id="paymentTitle">💳 Payment Method</h3>
+                    
+                    <div class="pay-option active">
+                        <div class="pay-option-content">
+                            <div class="pay-logo badge-crypto" style="font-size: 22px;">🕵️</div>
+                            <div>
+                                <strong style="display: block; font-size: 15px;" id="cryptoPayTitle">Anonymous Crypto Payment</strong>
+                                <small style="color: var(--light-gray); font-size: 11px; margin-top: 4px; display: block; line-height: 1.4;" id="cryptoPayDesc">
+                                    BTC, ETH, USDT, SOL, TRX, DOGE & more
+                                </small>
+                            </div>
+                        </div>
+                        <span class="pay-badge badge-safe-pulse" id="safeBadgeText">100% SAFE & ANONYMOUS</span>
+                    </div>
+
+                    <div class="crypto-suggestions">
+                        <h4 id="cryptoHintTitle">Don't have Crypto?</h4>
+                        <p id="cryptoHintText" style="font-size: 12px; color: var(--light-gray); margin-bottom: 15px;">Buy instantly and securely via:</p>
+                        
+                        <div class="crypto-brands">
+                            <a href="#" onclick="tg.openLink('https://t.me/wallet'); return false;" class="crypto-btn wallet">
+                                <span style="font-size:16px;">✈️</span> @wallet
+                            </a>
+                            <a href="#" onclick="tg.openLink('https://www.binance.com/'); return false;" class="crypto-btn binance">
+                                <span style="font-size:16px;">🟨</span> Binance
+                            </a>
+                            <a href="#" onclick="tg.openLink('https://www.revolut.com/'); return false;" class="crypto-btn revolut">
+                                <span style="font-size:16px;">⬛</span> Revolut
+                            </a>
+                            <a href="#" onclick="tg.openLink('https://www.moonpay.com/'); return false;" class="crypto-btn moonpay">
+                                <span style="font-size:16px;">🌙</span> MoonPay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="checkoutStickyBar" class="checkout-sticky-bar" style="display: none;">
+                <div id="checkoutError" style="color: var(--danger); font-size: 13px; margin-bottom: 10px; font-weight: bold; text-align: center; display: none;"></div>
+                
+                <div class="summary-row">
+                    <span id="lblSubtotal">Subtotal:</span>
+                    <span id="cartSubtotalValue">€0.00</span>
+                </div>
+                <div class="summary-row" id="discountRow" style="display:none; color: var(--success);">
+                    <span><span id="lblDiscount">Discount</span> (<span id="discountPercent">0</span>%):</span>
+                    <span id="cartDiscountValue">-€0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span id="lblDelivery">Delivery:</span>
+                    <span id="cartDeliveryValue">€10.00</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 700; color: var(--gold); margin: 10px 0 15px;">
+                    <span>TOTAL:</span>
+                    <span id="cartTotalValue">€0.00</span>
+                </div>
+                <button class="cart-summary-floating" id="btnCheckout" onclick="checkout()">
+                    CHECKOUT
+                </button>
+            </div>
+        </div>
+
+        <!-- INFO VIEW -->
+        <div id="view-info" class="app-view">
+            <div class="view-content">
+                <div class="no-cash-warning" id="noCashSection">
+                    <h3 id="noCashTitle">🚫 NO CASH ACCEPTED</h3>
+                    <p id="noCashText">We work exclusively with fully anonymous riders whom we prepay in crypto. We do not know their identities, as they arrive randomly to pickup your package and securely deliver it near your coordinates. When the rider reaches the spot, they will contact you directly to guide you to the precise hideout. This airtight process ensures that even if law enforcement is around, nothing can be connected to you or the rider.</p>
+                    <div class="no-cash-highlight">
+                        <p id="noCashWarning">Do not insist on cash payment. We make absolutely zero exceptions. NO UPFRONT PAYMENT NO DELIVERY.</p>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 id="shippingTitle">🚚 Delivery Process & Wholesale</h3>
+                    <p id="shippingText">We guarantee flash shipping and highly discreet local deliveries. Every package is hermetically vacuum-sealed, completely odorless, and showing no external branding.</p>
+                    <div class="wholesale-notice">
+                        <strong id="wholesaleTitle">WHOLESALE NOTICE:</strong>
+                        <p id="wholesaleText">Orders selected with 24/48hrs Express Shipping option operate under bulk/wholesale pricing structures and are significantly cheaper than instant local on-demand delivery. Please contact our operator in private for full details on wholesale price slashes.</p>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 id="contactTitle">📞 Contact</h3>
+                    <p id="contactText">Need help? Contact us on Telegram for support.</p>
+                    <a href="#" onclick="document.getElementById('contactWarningModal').classList.add('visible'); return false;" class="tg-link-btn" id="contactInfoBtn">Contact @eljefeshop</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVIEWS VIEW -->
+        <div id="view-reviews" class="app-view">
+            <div class="view-content">
+                <a href="https://t.me/+Gcd0-y4YDBtiNTc0" class="reviews-channel-btn" id="reviewsChannelBtn">📢 Join Reviews Channel</a>
+                
+                <div class="reviews-header">
+                    <h2 id="reviewsTitle">Reviews</h2>
+                    <p id="reviewsSub">Real reviews from our customers</p>
+                </div>
+
+                <div id="reviewsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <nav class="bottom-nav">
+            <button class="nav-tab active" onclick="showView('menu', this)">
+                <span class="icon">🌿</span>
+                <span id="navMenu">Menu</span>
+            </button>
+            <button class="nav-tab" onclick="showView('cart', this)">
+                <span class="cart-icon-wrapper">
+                    <span class="icon">🛒</span>
+                    <span class="badge-cart-count" id="navCartBadge" style="display: none;">0</span>
+                </span>
+                <span id="navCart">Cart</span>
+            </button>
+            <button class="nav-tab" onclick="showView('info', this)">
+                <span class="icon">ℹ️</span>
+                <span id="navInfo">Info</span>
+            </button>
+            <button class="nav-tab" onclick="showView('reviews', this)">
+                <span class="icon">⭐</span>
+                <span id="navReviews">Reviews</span>
+            </button>
+        </nav>
+
+        <button class="floating-contact" onclick="document.getElementById('contactWarningModal').classList.add('visible')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+            </svg>
+            <span id="contactBtnText">Contact</span>
+        </button>
+    </div>
+
+    <!-- MODALE AVVISO CONTATTO -->
+    <div class="contact-modal-overlay" id="contactWarningModal">
+        <div class="contact-modal-content">
+            <div style="font-size: 50px; margin-bottom: 15px;">🛑</div>
+            <h2 id="contactPopupTitle" style="color: var(--danger); margin-bottom: 15px; font-size: 24px; text-transform: uppercase;">Wait a minute!</h2>
+            <p id="contactPopupText" style="color: var(--white); font-size: 16px; line-height: 1.6; margin-bottom: 25px; font-weight: 500;">
+                Are you contacting us to ask if cash payment is possible? It says NO CASH everywhere! Please don't waste our precious time.
+            </p>
+            <button id="contactPopupBtn" class="contact-promise-btn" onclick="proceedToContact()">
+                I promise, no cash questions! 🤞
+            </button>
+            <button onclick="document.getElementById('contactWarningModal').classList.remove('visible')" style="background: none; border: none; color: var(--light-gray); margin-top: 15px; text-decoration: underline; cursor: pointer; font-size: 14px;">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notifiche -->
+    <div class="toast-notification" id="toast">✅ Added to cart!</div>
+
+    <!-- PRODUCT MODAL -->
+    <div class="product-modal" id="productModal">
+        <div class="product-modal-content">
+            <span class="product-modal-close" onclick="closeProductModal()">×</span>
+            <div class="product-modal-body">
+                <div class="product-modal-image-container"><img id="modalProductImage" src="" alt="Product"></div>
+                <div class="product-modal-info">
+                    <h2 id="modalProductName" class="product-modal-title"></h2>
+                    <div id="modalProductPrice" class="product-modal-price"></div>
+                    <div id="modalProductDesc" class="product-modal-description"></div>
+                    <div class="product-modal-category" id="modalProductCategory"></div>
+                    
+                    <div class="product-modal-controls">
+                        <div class="product-modal-qty-controls" id="modalQtyControls">
+                            <button class="product-modal-qty-btn" onclick="updateModalQty(-1)">-</button>
+                            <span id="modalQtyValue" class="product-modal-qty-value">1</span>
+                            <span id="modalQtyUnit" style="color: var(--gold); font-size: 16px; font-weight: 700; margin-left: 3px;">pz</span>
+                            <button class="product-modal-qty-btn" onclick="updateModalQty(1)">+</button>
+                        </div>
+                        <button id="modalAddToCart" class="product-modal-add-btn" onclick="addToCartFromModal()">Add to Cart</button>
+                    </div>
+                    
+                    <div id="modalEdiblesBtns" class="product-modal-edibles" style="display: none;">
+                        <button class="product-modal-edible-btn" onclick="addToCartFromModal(5)">Add 5</button>
+                        <button class="product-modal-edible-btn" onclick="addToCartFromModal(10)">Add 10</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready(); tg.expand();
+
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const tUser = tg.initDataUnsafe.user;
+            const tgInput = document.getElementById('inputTelegram');
+            if (tgInput) {
+                if (tUser.username) tgInput.value = "@" + tUser.username;
+                else tgInput.value = tUser.first_name + (tUser.last_name ? " " + tUser.last_name : "");
+            }
+        }
+
+        document.addEventListener('contextmenu', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            e.preventDefault(); 
+        });
+
+        document.addEventListener('keydown', e => {
+            if(e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+
+        let currentLang = 'EN';
+        let currentCurrency = 'EUR';
+        let cart = JSON.parse(localStorage.getItem('eljefe_cart')) || [];
+        let currentCategory = 'all';
+
+        function saveCart() { localStorage.setItem('eljefe_cart', JSON.stringify(cart)); }
+
+        const rates = { EUR: 1, USD: 1.08, GBP: 0.85, JPY: 162, RUB: 92 };
+        const symbols = { EUR: '€', USD: '$', GBP: '£', JPY: '¥', RUB: '₽' };
+
+        const translations = {
+            EN: {
+                welcome: "Welcome to El Jefe", subtitle: "Please select your Language and Currency", language: "Language", currency: "Currency", enter: "ENTER SHOP", headerSub: "Premium Quality Direct • Delivery in 1 hour!", 
+                promo: "🔥 FREE Shipping >50€ | 💸 -10% >90€ | -20% >150€ | -30% >300€", 
+                giftDesc: "Clipper lighter, rolling papers and filters included free in every order from 50€!",
+                categories: { all: "All", special: "💎 Special", weed: "🌿 Weed", vape: "💨 Vapes", hash: "🟫 Hash", mushrooms: "🍄 Mushrooms", prerolls: "🚬 Prerolls", edibles: "🍬 Edibles" },
+                addToCart: "Add", cartTitle: "🛒 Your Cart", emptyCart: "Your cart is empty", deliveryDetails: "📍 Delivery Details", city: "CITY", address: "ADDRESS", zip: "ZIP CODE", payment: "💳 Payment Method", checkout: "CHECKOUT",
+                navMenu: "Menu", navCart: "Cart", navInfo: "Info", navReviews: "Reviews", contact: "Contact",
+                shippingTitle: "🚚 Delivery Process & Wholesale", shippingText: "We guarantee flash shipping and highly discreet local deliveries. Every package is hermetically vacuum-sealed, completely odorless, and showing no external branding.",
+                wholesaleTitle: "WHOLESALE NOTICE:", wholesaleText: "Orders selected with 24/48hrs Express Shipping option operate under bulk/wholesale pricing structures and are significantly cheaper than instant local on-demand delivery.",
+                noCashTitle: "🚫 NO CASH ACCEPTED", noCashText: "We work exclusively with fully anonymous riders whom we prepay in crypto. We do not know their identities...",
+                noCashWarning: "Do not insist on cash payment. We make absolutely zero exceptions. NO UPFRONT PAYMENT NO DELIVERY.",
+                contactTitle: "📞 Contact", contactText: "Need help? Contact us on Telegram for support.",
+                reviewsTitle: "Reviews", reviewsSub: "Real reviews from our customers", reviewsChannelBtn: "📢 Join Reviews Channel",
+                addedToCart: "✅ Added to cart!", fillFieldsError: "⚠️ Please fill in all delivery fields",
+                telegramUser: "TELEGRAM USERNAME / PHONE",
+                cryptoHintTitle: "Don't have Crypto?",
+                cryptoHintText: "Buy instantly and securely via:",
+                minOrderErrorText: "⚠️ Insufficient order amount. Min 30€. Free delivery over 50€!",
+                subtotal: "Subtotal:", discount: "Discount", delivery: "Delivery:",
+                verifyCityFirst: "⚠️ Please verify your city first.", verifyBtn: "VERIFY",
+                cityEuSuccess: "✅ 20-30 min delivery available!", cityEuFail: "❌ Instant delivery not available here. Contact Support.", cityNotFound: "❌ City not found.",
+                cryptoPayTitle: "Anonymous Crypto Payment", cryptoPayDesc: "BTC, ETH, USDT, SOL, TRX, DOGE & more", safeBadge: "100% SAFE & ANONYMOUS",
+                contactInfoBtn: "Contact @eljefeshop", contactPopupTitle: "WAIT A MINUTE! 🛑", contactPopupText: "Are you contacting us to ask if cash payment is possible? It says NO CASH everywhere! Please don't waste our precious time.", contactPopupBtn: "I promise, no cash questions! 🤞",
+                reviewsList: [
+                    { name: "@Marco***", text: "Top quality as always. The rider arrived in 45 minutes and the stuff is amazing." },
+                    { name: "@Alex***", text: "I was skeptical about crypto payment but the service is super professional." }
+                ]
+            },
+            IT: {
+                welcome: "Benvenuto in El Jefe", subtitle: "Seleziona la tua Lingua e Valuta", language: "Lingua", currency: "Valuta", enter: "ENTRA NEL NEGOZIO", headerSub: "Qualità Premium Diretta • Consegna in 1 ora!", 
+                promo: "🔥 Spedizione GRATIS >50€ | 💸 -10% >90€ | -20% >150€ | -30% >300€", 
+                giftDesc: "Accendino Clipper, cartine e filtri inclusi gratis in ogni ordine da 50€!",
+                categories: { all: "Tutti", special: "💎 Speciali", weed: "🌿 Erba", vape: "💨 Vapes", hash: "🟫 Hash", mushrooms: "🍄 Funghi", prerolls: "🚬 Preroll", edibles: "🍬 Edibili" },
+                addToCart: "Aggiungi", cartTitle: "🛒 Il tuo Carrello", emptyCart: "Il tuo carrello è vuoto", deliveryDetails: "📍 Dettagli Consegna", city: "CITTÀ", address: "INDIRIZZO", zip: "CAP", payment: "💳 Metodo di Pagamento", checkout: "PAGA ORA",
+                navMenu: "Menu", navCart: "Carrello", navInfo: "Info", navReviews: "Recensioni", contact: "Contatto",
+                shippingTitle: "🚚 Processo di Consegna & Ingrosso", shippingText: "Garantiamo spedizioni lampo e consegne locali altamente discrete. Ogni pacchetto è sigillato ermeticamente sottovuoto.",
+                wholesaleTitle: "AVVISO INGROSSO:", wholesaleText: "Gli ordini selezionati con l'opzione Spedizione Express 24/48h operano con strutture di prezzi all'ingrosso.",
+                noCashTitle: "🚫 NO PAGAMENTO IN CONTANTI", noCashText: "Lavoriamo esclusivamente con rider completamente anonimi che prepaghiamo in crypto.",
+                noCashWarning: "Non insistere con pagamento in contanti. NESSUN PAGAMENTO ANTICIPATO NESSUNA CONSEGNA.",
+                contactTitle: "📞 Contatti", contactText: "Serve aiuto? Contattaci su Telegram per supporto.",
+                reviewsTitle: "Recensioni", reviewsSub: "Recensioni reali dei nostri clienti", reviewsChannelBtn: "📢 Unisciti al Canale Recensioni",
+                addedToCart: "✅ Aggiunto al carrello!", fillFieldsError: "⚠️ Compila tutti i campi di consegna",
+                telegramUser: "UTENTE TELEGRAM / TELEFONO",
+                cryptoHintTitle: "Non hai Crypto?",
+                cryptoHintText: "Acquistale in un istante e in modo sicuro tramite:",
+                minOrderErrorText: "⚠️ Ordine minimo 30€ non raggiunto. Da 50€ la consegna è GRATIS!",
+                subtotal: "Subtotale:", discount: "Sconto", delivery: "Spedizione:",
+                verifyCityFirst: "⚠️ Per favore verifica prima la tua città.", verifyBtn: "VERIFICA",
+                cityEuSuccess: "✅ Consegna in 20-30 min disponibile!", cityEuFail: "❌ Consegna rapida non disponibile qui.", cityNotFound: "❌ Città non trovata.",
+                cryptoPayTitle: "Pagamento Crypto Anonimo", cryptoPayDesc: "BTC, ETH, USDT, SOL, TRX, DOGE e altre", safeBadge: "100% SICURO E ANONIMO",
+                contactInfoBtn: "Contatta @eljefeshop", contactPopupTitle: "ASPETTA UN ATTIMO! 🛑", contactPopupText: "Ci stai contattando per chiedere se è possibile il pagamento in contanti? C'è scritto NO CASH dappertutto!", contactPopupBtn: "Prometto, nessuna domanda sui contanti! 🤞",
+                reviewsList: [
+                    { name: "@Marco***", text: "Top quality come sempre. Il rider è arrivato in 45 minuti e la roba è spaziale." },
+                    { name: "@Alex***", text: "Ero scettico per il pagamento in crypto ma il servizio è super professionale." }
+                ]
+            }
+        };
+
+        // Fallback per FR, DE, RU (usano EN per abbreviare il codice qui, ma tu puoi rimettere l'intero blocco se vuoi)
+        translations.FR = translations.EN; translations.DE = translations.EN; translations.RU = translations.EN;
+
+        function getUnitForProduct(category, name) {
+            const lowerName = (name || "").toLowerCase();
+            if (category === 'weed' || category === 'hash') return 'gr';
+            if (category === 'special') return lowerName.includes('lsd liquid') ? 'pz' : 'gr';
+            if (category === 'prerolls') return 'pz';
+            if (category === 'mushrooms') return 'porz.';
+            return 'pz';
+        }
+
+        function selectLanguage(lang) { currentLang = lang; document.querySelectorAll('.welcome-screen .lang-btn').forEach(b => b.classList.remove('active')); document.querySelector(`.welcome-screen .lang-btn[data-lang="${lang}"]`).classList.add('active'); applyTranslations(); }
+        function selectCurrency(curr) { currentCurrency = curr; document.querySelectorAll('.welcome-screen .currency-btn').forEach(b => b.classList.remove('active')); document.querySelector(`.welcome-screen .currency-btn[data-currency="${curr}"]`).classList.add('active'); document.getElementById('headerCurrency').value = curr; if (document.getElementById('productsGrid').innerHTML !== '') renderProducts(); updateCart(); }
+        function changeLang(lang) { currentLang = lang; document.querySelectorAll('.top-controls-bar .lang-btn').forEach(b => b.classList.remove('active')); document.querySelector(`.top-controls-bar .lang-btn[data-lang="${lang}"]`).classList.add('active'); applyTranslations(); if (document.getElementById('productsGrid').innerHTML !== '') renderProducts(); updateCart(); }
+        function changeCurrency(curr) { currentCurrency = curr; if (document.getElementById('productsGrid').innerHTML !== '') renderProducts(); updateCart(); }
+
+        function applyTranslations() {
+            const t = translations[currentLang];
+            document.getElementById('welcomeTitle').textContent = t.welcome;
+            document.getElementById('welcomeSubtitle').textContent = t.subtitle;
+            document.getElementById('langTitle').textContent = t.language;
+            document.getElementById('currTitle').textContent = t.currency;
+            document.getElementById('enterBtn').textContent = t.enter;
+            document.getElementById('headerSub').textContent = t.headerSub;
+            document.getElementById('promoBanner').textContent = t.promo;
+            document.getElementById('giftDesc').textContent = t.giftDesc;
+            document.getElementById('cartTitle').textContent = t.cartTitle;
+            document.getElementById('emptyCartText').textContent = t.emptyCart;
+            document.getElementById('deliveryDetails').textContent = t.deliveryDetails;
+            document.getElementById('lblCity').textContent = t.city;
+            document.getElementById('lblAddress').textContent = t.address;
+            document.getElementById('lblZip').textContent = t.zip;
+            document.getElementById('paymentTitle').textContent = t.payment;
+            document.getElementById('btnCheckout').textContent = t.checkout;
+            document.getElementById('navMenu').textContent = t.navMenu;
+            document.getElementById('navCart').textContent = t.navCart;
+            document.getElementById('navInfo').textContent = t.navInfo;
+            document.getElementById('navReviews').textContent = t.navReviews;
+            document.getElementById('contactBtnText').textContent = t.contact;
+            document.getElementById('shippingTitle').textContent = t.shippingTitle;
+            document.getElementById('shippingText').textContent = t.shippingText;
+            document.getElementById('wholesaleTitle').textContent = t.wholesaleTitle;
+            document.getElementById('wholesaleText').textContent = t.wholesaleText;
+            document.getElementById('noCashTitle').textContent = t.noCashTitle;
+            document.getElementById('noCashText').textContent = t.noCashText;
+            document.getElementById('noCashWarning').textContent = t.noCashWarning;
+            document.getElementById('contactTitle').textContent = t.contactTitle;
+            document.getElementById('contactText').textContent = t.contactText;
+            document.getElementById('reviewsTitle').textContent = t.reviewsTitle;
+            document.getElementById('reviewsSub').textContent = t.reviewsSub;
+            document.getElementById('reviewsChannelBtn').textContent = t.reviewsChannelBtn;
+            document.getElementById('lblTelegram').textContent = t.telegramUser;
+            document.getElementById('cryptoHintTitle').textContent = t.cryptoHintTitle;
+            document.getElementById('cryptoHintText').textContent = t.cryptoHintText;
+            document.getElementById('lblSubtotal').textContent = t.subtotal;
+            document.getElementById('lblDiscount').textContent = t.discount;
+            document.getElementById('lblDelivery').textContent = t.delivery;
+            document.getElementById('btnVerifyCity').textContent = t.verifyBtn;
+            document.getElementById('cryptoPayTitle').textContent = t.cryptoPayTitle;
+            document.getElementById('cryptoPayDesc').textContent = t.cryptoPayDesc;
+            document.getElementById('safeBadgeText').textContent = t.safeBadge;
+
+            document.getElementById('contactInfoBtn').textContent = t.contactInfoBtn;
+            document.getElementById('contactPopupTitle').textContent = t.contactPopupTitle;
+            document.getElementById('contactPopupText').textContent = t.contactPopupText;
+            document.getElementById('contactPopupBtn').textContent = t.contactPopupBtn;
+
+            const catBtns = document.querySelectorAll('.category-btn');
+            if (catBtns.length > 0) {
+                catBtns[0].textContent = t.categories.all; catBtns[1].textContent = t.categories.special;
+                catBtns[2].textContent = t.categories.weed; catBtns[3].textContent = t.categories.vape;
+                catBtns[4].textContent = t.categories.hash; catBtns[5].textContent = t.categories.mushrooms;
+                catBtns[6].textContent = t.categories.prerolls; catBtns[7].textContent = t.categories.edibles;
+            }
+
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            if (reviewsContainer && t.reviewsList) {
+                reviewsContainer.innerHTML = '';
+                t.reviewsList.forEach(rev => {
+                    reviewsContainer.innerHTML += `<div class="review-card"><div class="review-header"><span class="reviewer-name">${rev.name}</span><span class="review-rating">⭐⭐⭐⭐⭐</span></div><div class="review-text">${rev.text}</div></div>`;
+                });
+            }
+        }
+
+        function enterShop() { document.getElementById('welcomeScreen').classList.add('hidden'); document.getElementById('appContainer').classList.add('visible'); applyTranslations(); renderProducts(); }
+        function filterProducts(cat, btn) { currentCategory = cat; document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderProducts(); }
+        function formatPrice(priceEur) { return symbols[currentCurrency] + (priceEur * rates[currentCurrency]).toFixed(2); }
+        function getProductDescription(product) { if (typeof productDescTranslations !== 'undefined' && productDescTranslations[product.id]) { return productDescTranslations[product.id][currentLang] || productDescTranslations[product.id]['EN'] || ""; } return product.desc || ""; }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+            if (typeof products === 'undefined') return;
+            
+            let filtered = currentCategory === 'all' ? products : products.filter(p => p.category === currentCategory);
+            
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => openProductModal(p);
+                const unit = getUnitForProduct(p.category, p.name);
+                let desc = getProductDescription(p);
+                let shortDesc = desc.length > 40 ? desc.substring(0, 40) + '...' : desc;
+
+                let controlsHtml = p.category === 'edibles' ? 
+                    `<div class="edibles-btns" onclick="event.stopPropagation()"><button class="edible-btn" onclick="addToCartDirect(${p.id}, 5)">+ 5</button><button class="edible-btn" onclick="addToCartDirect(${p.id}, 10)">+ 10</button></div>` :
+                    `<div class="grid-qty-controls" onclick="event.stopPropagation()"><button class="add-to-cart" onclick="addToCartDirect(${p.id}, 1)">${translations[currentLang].addToCart}</button></div>`;
+                
+                card.innerHTML = `<img src="${p.image}" class="product-image" alt="${p.name}"><div class="product-info"><div class="product-name">${p.name}</div><div class="product-desc">${shortDesc}</div><div class="product-price">${formatPrice(p.price)} <span style="font-size:12px;color:var(--light-gray);">/${unit}</span></div>${controlsHtml}</div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function addToCartDirect(productId, qty) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            const existing = cart.find(item => item.id === productId);
+            if (existing) existing.qty += qty; else cart.push({ ...product, qty: qty });
+            saveCart(); updateCartBadge(); showToast(translations[currentLang].addedToCart, false);
+        }
+
+        let currentModalProduct = null; let modalQty = 1;
+
+        function openProductModal(product) {
+            currentModalProduct = product; modalQty = 1;
+            document.getElementById('modalProductImage').src = product.image;
+            document.getElementById('modalProductName').textContent = product.name;
+            document.getElementById('modalProductPrice').textContent = formatPrice(product.price);
+            document.getElementById('modalProductDesc').textContent = getProductDescription(product);
+            document.getElementById('modalProductCategory').textContent = translations[currentLang].categories[product.category] || product.category;
+            document.getElementById('modalQtyValue').textContent = modalQty;
+            document.getElementById('modalQtyUnit').textContent = getUnitForProduct(product.category, product.name);
+
+            if (product.category === 'edibles') {
+                document.getElementById('modalQtyControls').style.display = 'none'; document.getElementById('modalAddToCart').style.display = 'none'; document.getElementById('modalEdiblesBtns').style.display = 'grid';
+            } else {
+                document.getElementById('modalQtyControls').style.display = 'flex'; document.getElementById('modalAddToCart').style.display = 'block'; document.getElementById('modalEdiblesBtns').style.display = 'none';
+            }
+            document.getElementById('productModal').classList.add('visible');
+        }
+
+        function closeProductModal() { document.getElementById('productModal').classList.remove('visible'); }
+        function updateModalQty(change) { if (modalQty + change >= 1) { modalQty += change; document.getElementById('modalQtyValue').textContent = modalQty; document.getElementById('modalProductPrice').textContent = formatPrice(currentModalProduct.price * modalQty); } }
+        function addToCartFromModal(qty = null) {
+            const finalQty = qty || modalQty;
+            const existing = cart.find(item => item.id === currentModalProduct.id);
+            if (existing) existing.qty += finalQty; else cart.push({ ...currentModalProduct, qty: finalQty });
+            saveCart(); closeProductModal(); updateCartBadge(); showToast(translations[currentLang].addedToCart, false);
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById('navCartBadge');
+            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+            if (totalItems > 0) { badge.style.display = 'flex'; badge.textContent = totalItems; } else { badge.style.display = 'none'; }
+        }
+
+        function updateCart() {
+            const container = document.getElementById('cartItemsContainer');
+            container.innerHTML = '';
+            
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="empty-cart"><div class="empty-cart-icon">🛒</div><p id="emptyCartText">${translations[currentLang].emptyCart}</p></div>`;
+                document.getElementById('checkoutForm').style.display = 'none';
+                document.getElementById('checkoutStickyBar').style.display = 'none';
+                return;
+            }
+            
+            let subtotalEur = 0;
+            cart.forEach((item, index) => {
+                subtotalEur += item.price * item.qty;
+                const unit = getUnitForProduct(item.category, item.name);
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `<img src="${item.image}" class="cart-item-image"><div class="cart-item-details"><div class="cart-item-name">${item.name}</div><div class="cart-item-price">${formatPrice(item.price * item.qty)}</div><div class="quantity-controls"><button class="qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button><span class="cart-qty-val">${item.qty} ${unit}</span><button class="qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button></div></div><button class="remove-item" onclick="removeFromCart(${index})">🗑️</button>`;
+                container.appendChild(div);
+            });
+            
+            let discountPct = 0;
+            if (subtotalEur >= 300) discountPct = 30; else if (subtotalEur >= 150) discountPct = 20; else if (subtotalEur >= 90) discountPct = 10;
+            let discountAmt = (subtotalEur * discountPct) / 100;
+            let afterDiscount = subtotalEur - discountAmt;
+            let deliveryFee = afterDiscount >= 50 ? 0 : 10;
+            
+            document.getElementById('cartSubtotalValue').textContent = formatPrice(subtotalEur);
+            if (discountPct > 0) { document.getElementById('discountRow').style.display = 'flex'; document.getElementById('discountPercent').textContent = discountPct; document.getElementById('cartDiscountValue').textContent = "-" + formatPrice(discountAmt); } else { document.getElementById('discountRow').style.display = 'none'; }
+            document.getElementById('cartDeliveryValue').textContent = deliveryFee === 0 ? "FREE" : formatPrice(deliveryFee);
+            document.getElementById('cartTotalValue').textContent = formatPrice(afterDiscount + deliveryFee);
+
+            const errDiv = document.getElementById('checkoutError');
+            const btn = document.getElementById('btnCheckout');
+            if (afterDiscount < 30) { errDiv.style.display = 'block'; errDiv.textContent = translations[currentLang].minOrderErrorText; btn.style.opacity = '0.5'; btn.disabled = true; } else { errDiv.style.display = 'none'; btn.style.opacity = '1'; btn.disabled = false; }
+            document.getElementById('checkoutForm').style.display = 'block'; document.getElementById('checkoutStickyBar').style.display = 'block';
+        }
+
+        function updateCartItemQty(index, change) { if (cart[index].qty + change >= 1) cart[index].qty += change; else cart.splice(index, 1); saveCart(); updateCartBadge(); updateCart(); }
+        function removeFromCart(index) { cart.splice(index, 1); saveCart(); updateCartBadge(); updateCart(); }
+        function showView(viewId, btn) { document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active')); document.getElementById('view-' + viewId).classList.add('active'); document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (viewId === 'cart') updateCart(); window.scrollTo(0,0); }
+        
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = isError ? 'var(--danger)' : 'var(--success)';
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.style.background = 'var(--success)', 300); }, 3000);
+        }
+
+        let isCityVerified = false;
+        const euCountryCodes = ['at','be','bg','hr','cy','cz','dk','ee','fi','fr','de','gr','hu','ie','it','lv','lt','lu','mt','nl','pl','pt','ro','sk','si','es','se','al','ad','am','by','ba','fo','ge','is','li','mk','md','mc','me','no','ru','sm','rs','ch','tr','ua','gb','uk','va'];
+
+        function resetCityCheck() { isCityVerified = false; document.getElementById('cityCheckResult').style.display = 'none'; }
+        async function verifyCity() {
+            const city = document.getElementById('inputCity').value.trim();
+            const resultDiv = document.getElementById('cityCheckResult');
+            if (!city) { resultDiv.style.display = 'block'; resultDiv.style.color = 'var(--danger)'; resultDiv.textContent = translations[currentLang].cityNotFound; return; }
+            resultDiv.style.display = 'block'; resultDiv.style.color = 'var(--light-gray)'; resultDiv.textContent = "Verifying...";
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    if (euCountryCodes.includes(data[0].address.country_code.toLowerCase())) {
+                        isCityVerified = true; resultDiv.style.color = 'var(--success)'; resultDiv.textContent = translations[currentLang].cityEuSuccess;
+                    } else {
+                        isCityVerified = false; resultDiv.style.color = 'var(--danger)'; resultDiv.innerHTML = translations[currentLang].cityEuFail + " <a href='#' onclick='tg.openLink(\"https://t.me/eljefeshop\"); return false;' style='color:var(--gold);'>@eljefeshop</a>";
+                    }
+                } else { isCityVerified = false; resultDiv.style.color = 'var(--danger)'; resultDiv.textContent = translations[currentLang].cityNotFound; }
+            } catch (e) { resultDiv.style.color = 'var(--danger)'; resultDiv.textContent = "⚠️ Error verifying city."; }
+        }
+
+        async function checkout() {
+            if (!isCityVerified) { showToast(translations[currentLang].verifyCityFirst, true); return; }
+            let subtotalEur = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            let discountPct = 0; if (subtotalEur >= 300) discountPct = 30; else if (subtotalEur >= 150) discountPct = 20; else if (subtotalEur >= 90) discountPct = 10;
+            let afterDiscount = subtotalEur - ((subtotalEur * discountPct) / 100);
+            if (afterDiscount < 30) { showToast(translations[currentLang].minOrderErrorText, true); return; }
+            
+            let finalTotalEur = afterDiscount + (afterDiscount >= 50 ? 0 : 10);
+            const telegramUser = document.getElementById('inputTelegram').value.trim();
+            const city = document.getElementById('inputCity').value.trim();
+            const address = document.getElementById('inputAddress').value.trim();
+            const zip = document.getElementById('inputZip').value.trim();
+            
+            if (!telegramUser || !city || !address || !zip) { showToast(translations[currentLang].fillFieldsError, true); return; }
+
+            const btn = document.getElementById('btnCheckout'); const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ PROCESSING...'; btn.disabled = true;
+
+            try {
+                // IL FIX PER L'ERRORE DEL SERVER È QUI: TRY/CATCH ROBUSTO SULLA RISPOSTA DEL PHP
+                const response = await fetch('create-payment.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: finalTotalEur, currency: currentCurrency, order_id: 'ORD-' + Date.now(),
+                        customer: { telegram: telegramUser, city, address, zip }, items: cart
+                    })
+                });
+
+                const responseText = await response.text();
+                let data;
+                try { data = JSON.parse(responseText); } catch(e) {
+                    console.error("Errore fatale PHP o Server non-JSON:", responseText);
+                    showToast("Errore server. Dettagli in console.", true);
+                    btn.innerHTML = originalText; btn.disabled = false;
+                    return;
+                }
+
+                if (response.ok && data.token) {
+                    const gatewayUrl = `https://app.paymento.io/gateway?token=${data.token}`;
+                    if (window.Telegram && window.Telegram.WebApp) tg.openLink(gatewayUrl);
+                    else window.location.href = gatewayUrl;
+                } else {
+                    showToast("Errore Paymento: " + (data.error || "Non riuscito"), true);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Nessuna connessione al server.", true);
+            } finally {
+                btn.innerHTML = originalText; btn.disabled = false;
+            }
+        }
+
+        function proceedToContact() {
+            document.getElementById('contactWarningModal').classList.remove('visible');
+            if (window.Telegram && window.Telegram.WebApp) tg.openLink('https://t.me/eljefeshop'); else window.open('https://t.me/eljefeshop', '_blank');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (new URLSearchParams(window.location.search).get('payment') === 'success') {
+                showToast("✅ Pagamento confermato!", false);
+                localStorage.removeItem('eljefe_cart'); // Svuota carrello
+            }
+        });
+
+        const allInputs = document.querySelectorAll('input, textarea, select');
+        allInputs.forEach(input => {
+            input.addEventListener('focus', () => document.body.classList.add('keyboard-open'));
+            input.addEventListener('blur', () => setTimeout(() => document.body.classList.remove('keyboard-open'), 100));
+        });
+
+        applyTranslations(); updateCartBadge();
+    </script>
+</body>
+</html>
